@@ -1,14 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Cocos Node Inspector",
-  "version": "1.2.1",
+  "version": "1.3.3",
   "description": "Cocos Creator 2.x（2.0～2.4）运行时节点树查看与编辑 — Chrome DevTools",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["scripting", "storage"],
+  "permissions": ["scripting", "storage", "downloads"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "src/background/sw.js"
@@ -28,7 +28,9 @@
         "src/injected/bridge.js",
         "src/injected/serializer.js",
         "src/injected/mutator.js",
-        "src/injected/picker.js"
+        "src/injected/picker.js",
+        "src/injected/zip-store.js",
+        "src/injected/assets.js"
       ],
       "matches": ["http://*/*", "https://*/*"]
     }

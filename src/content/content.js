@@ -120,6 +120,8 @@
       'src/injected/serializer.js',
       'src/injected/mutator.js',
       'src/injected/picker.js',
+      'src/injected/zip-store.js',
+      'src/injected/assets.js',
       'src/injected/bridge.js',
     ];
 

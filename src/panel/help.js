@@ -14,9 +14,21 @@
         '兼容 Creator 2.0～2.4；状态栏会显示引擎版本号（若可读取）。',
         '状态栏显示连接状态与当前场景名；点「刷新」可强制拉取节点树。',
         '「轮询」开启后会周期性同步节点树与选中节点属性；可调整间隔（毫秒）。',
+        '「下载资源」：在游戏页内打包成一个 zip；Spine 会导出同目录下的 `.json` + `.atlas` + 贴图。',
       ],
     },
     {
+      id: 'assets',
+      title: '一键下载资源',
+      items: [
+        '在页面主世界拉取并打包（避免扩展面板 CORS 导致大量失败）。',
+        'Spine：每个 SkeletonData 导出到 `spine/名称/`，包含 json、atlas、png 三件套（内存优先，不靠乱猜扩展名）。',
+        '合图/图集：从运行时 SpriteFrame、SpriteAtlas 还原裁切信息，与贴图同目录输出 `.json`（TexturePacker frames 兼容）和 `.frames.txt`；多帧贴图在 `atlases/`。',
+        '其它资源只收集带真实扩展名的 nativeUrl / rawAssets，不再对每个 uuid 盲猜 .png/.mp3。',
+        '压缩包内仍按 images、atlases、spine、audio、materials、models 等目录分类；失败列表见 `_download_failed.txt`。',
+        '建议先进入资源已加载的界面再点下载。',
+      ],
+    },
       id: 'hierarchy',
       title: '节点树',
       items: [

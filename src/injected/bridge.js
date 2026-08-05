@@ -367,6 +367,53 @@
         return;
       }
 
+      if (type === 'LIST_ASSETS') {
+        var assetsApi = window.__CCNodeInspectorAssets;
+        if (!assetsApi || typeof assetsApi.collectAssets !== 'function') {
+          emit('RPC_RESULT', { ok: false, error: 'assets module not loaded' }, id);
+          return;
+        }
+        var collected = assetsApi.collectAssets();
+        // 精简回传（不含 inline 二进制）
+        var light = {
+          ok: collected.ok,
+          error: collected.error,
+          total: collected.total,
+          stats: collected.stats,
+          items: (collected.items || []).map(function (it) {
+            return {
+              kind: it.kind,
+              filename: it.filename,
+              category: it.category,
+              url: it.kind === 'url' ? it.url : '',
+              name: it.name,
+              uuid: it.uuid,
+            };
+          }),
+        };
+        emit('RPC_RESULT', light, id);
+        return;
+      }
+
+      if (type === 'EXPORT_ASSETS_ZIP') {
+        var assetsExp = window.__CCNodeInspectorAssets;
+        if (!assetsExp || typeof assetsExp.exportAndDownloadZip !== 'function') {
+          emit('RPC_RESULT', { ok: false, error: 'assets module not loaded' }, id);
+          return;
+        }
+        assetsExp
+          .exportAndDownloadZip(function (done, total, failed) {
+            emit('ASSET_EXPORT_PROGRESS', { done: done, total: total, failed: failed });
+          })
+          .then(function (result) {
+            emit('RPC_RESULT', result, id);
+          })
+          .catch(function (e) {
+            emit('RPC_RESULT', { ok: false, error: String(e) }, id);
+          });
+        return;
+      }
+
       emit('RPC_RESULT', { ok: false, error: 'unknown type ' + type }, id);
     } catch (e) {
       emit('RPC_RESULT', { ok: false, error: String(e) }, id);

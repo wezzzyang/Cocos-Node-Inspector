@@ -20,6 +20,7 @@
   const inspectorRoot = document.getElementById('inspectorRoot');
   const searchInput = document.getElementById('searchInput');
   const btnRefresh = document.getElementById('btnRefresh');
+  const btnDownloadAssets = document.getElementById('btnDownloadAssets');
   const btnPick = document.getElementById('btnPick');
   const pollToggle = document.getElementById('pollToggle');
   const pollInterval = document.getElementById('pollInterval');
@@ -377,6 +378,22 @@
       return;
     }
 
+    if (msg.type === 'ASSET_EXPORT_PROGRESS') {
+      var p = msg.payload || {};
+      if (downloadingAssets) {
+        setStatus(
+          'warn',
+          '打包中 ' +
+            (p.done || 0) +
+            '/' +
+            (p.total || 0) +
+            (p.failed ? '（失败 ' + p.failed + '）' : '') +
+            '…'
+        );
+      }
+      return;
+    }
+
     if (msg.type === 'RPC_RESULT' && msg.id && pending.has(msg.id)) {
       const resolve = pending.get(msg.id);
       pending.delete(msg.id);
@@ -445,6 +462,66 @@
   btnRefresh.addEventListener('click', function () {
     send('GET_TREE', {});
   });
+
+  let downloadingAssets = false;
+  function formatAssetStats(stats) {
+    if (!stats) return '';
+    var parts = [];
+      var order = ['images', 'atlases', 'spine', 'audio', 'materials', 'models', 'fonts', 'animations', 'json', 'video', 'other', 'atlasTextures'];
+    for (var i = 0; i < order.length; i++) {
+      var k = order[i];
+      if (stats[k]) parts.push(k + ':' + stats[k]);
+    }
+    for (var key in stats) {
+      if (Object.prototype.hasOwnProperty.call(stats, key) && order.indexOf(key) < 0 && stats[key]) {
+        parts.push(key + ':' + stats[key]);
+      }
+    }
+    return parts.join(' · ');
+  }
+
+  function downloadAssetsOneClick() {
+    if (downloadingAssets) return;
+    if (!connected) {
+      setStatus('err', '未连接，无法下载资源');
+      return;
+    }
+    downloadingAssets = true;
+    if (btnDownloadAssets) btnDownloadAssets.disabled = true;
+    setStatus('warn', '正在页面内扫描并打包资源（含 Spine 三件套）…');
+
+    send('EXPORT_ASSETS_ZIP', {}, 180000)
+      .then(function (res) {
+        downloadingAssets = false;
+        if (btnDownloadAssets) btnDownloadAssets.disabled = false;
+        if (!res || !res.ok) {
+          setStatus('err', '导出失败：' + ((res && res.error) || 'unknown'));
+          return;
+        }
+        var tip = formatAssetStats(res.stats);
+        setStatus(
+          'ok',
+          '已下载 ' +
+            (res.filename || 'CocosAssets_*.zip') +
+            '（成功 ' +
+            (res.packed || 0) +
+            '/' +
+            (res.total || 0) +
+            (res.failed ? '，跳过 ' + res.failed : '') +
+            '）' +
+            (tip ? ' · ' + tip : '')
+        );
+      })
+      .catch(function (e) {
+        downloadingAssets = false;
+        if (btnDownloadAssets) btnDownloadAssets.disabled = false;
+        setStatus('err', '导出失败：' + String(e));
+      });
+  }
+
+  if (btnDownloadAssets) {
+    btnDownloadAssets.addEventListener('click', downloadAssetsOneClick);
+  }
 
   function setPickMode(on) {
     pickMode = !!on;

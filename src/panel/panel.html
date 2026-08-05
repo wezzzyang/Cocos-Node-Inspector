@@ -34,6 +34,14 @@
           title="轮询间隔（毫秒）"
         />
         <button type="button" id="btnRefresh" title="刷新节点树">刷新</button>
+        <button
+          type="button"
+          id="btnDownloadAssets"
+          class="theme-toggle"
+          title="扫描资源并打包成一个 zip（内含分类文件夹）"
+        >
+          下载资源
+        </button>
       </div>
       <button type="button" id="btnHelp" class="theme-toggle" title="功能说明">说明</button>
       <button type="button" id="themeToggle" class="theme-toggle" title="切换浅色/深色">深色</button>
@@ -80,6 +88,7 @@
     </div>
 
     <script src="help.js"></script>
+    <script src="zip-store.js"></script>
     <script src="tree.js"></script>
     <script src="inspector.js"></script>
     <script src="panel.js"></script>
