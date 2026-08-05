@@ -7,8 +7,8 @@ Chrome DevTools 扩展：在运行时查看 / 编辑 **Cocos Creator 2.x（2.0�
 1. 打开 Chrome → `chrome://extensions`
 2. 开启「开发者模式」
 3. 「加载已解压的扩展程序」→ 选择本仓库根目录
-4. 启动 Creator Web 预览（任意本地端口，如 `http://localhost:7456/`）
-5. 打开页面 F12 → 顶部面板 **Cocos Node**
+4. 启动 Creator Web 预览（任意地址，如 `http://localhost:7456/` 或 `http://192.168.1.2:7456/`）
+5. 打开页面 F12 → 顶部面板 **Cocos Node**（扩展会探测页面是否存在 `cc`，与 IP 无关）
 
 ## 版本兼容（2.x）
 
@@ -17,7 +17,7 @@ Chrome DevTools 扩展：在运行时查看 / 编辑 **Cocos Creator 2.x（2.0�
 | 节点树 / 属性编辑 / 拖拽 / 悬停高亮 | 2.0～2.4 通用 `cc` API |
 | Sprite 换图 | 2.4：`assetManager`；更早：`cc.loader` / `AssetLibrary` 自动回退 |
 | 旋转 | 优先 `angle`，旧版回退 `rotation` |
-| 预览地址 | `localhost` / `127.0.0.1` 任意端口；支持 iframe 内 `cc` |
+| 预览地址 | 任意 `http://` / `https://`（含局域网 IP）；支持 iframe 内 `cc` |
 
 ## 功能
 

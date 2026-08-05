@@ -272,15 +272,16 @@
   }
 
   var HIGHLIGHT_NAME = '__CC_NODE_INSPECTOR_HL__';
+  var OVERLAY_NAME = '__CC_NODE_INSPECTOR_OVERLAY__';
 
   function serializeTreeNode(node) {
     if (!node) return null;
-    if (node.name === HIGHLIGHT_NAME) return null;
+    if (node.name === HIGHLIGHT_NAME || node.name === OVERLAY_NAME) return null;
     const children = [];
     const list = node.children || [];
     for (let i = 0; i < list.length; i++) {
       const child = list[i];
-      if (child && child.name === HIGHLIGHT_NAME) continue;
+      if (child && (child.name === HIGHLIGHT_NAME || child.name === OVERLAY_NAME)) continue;
       const serialized = serializeTreeNode(child);
       if (serialized) children.push(serialized);
     }

@@ -424,7 +424,9 @@
   }
 
   var HIGHLIGHT_NAME = '__CC_NODE_INSPECTOR_HL__';
+  var OVERLAY_NAME = '__CC_NODE_INSPECTOR_OVERLAY__';
   var highlightNode = null;
+  var overlayCanvas = null;
   var hoverUuid = null;
 
   function clearHoverHighlight() {
@@ -448,8 +450,167 @@
     return n;
   }
 
-  /** 高亮挂到 Canvas/场景根，不挂在目标节点下，避免被 Mask/透明度/兄弟遮挡 */
+  function getCameraDepth(canvasNode) {
+    try {
+      var cam = canvasNode.getComponent && canvasNode.getComponent(cc.Camera);
+      if (cam && typeof cam.depth === 'number') return cam.depth;
+    } catch (_) {}
+    try {
+      var canvas = canvasNode.getComponent && canvasNode.getComponent(cc.Canvas);
+      if (canvas && canvas._camera && typeof canvas._camera.depth === 'number') {
+        return canvas._camera.depth;
+      }
+    } catch (_2) {}
+    return 0;
+  }
+
+  function collectCanvases(node, out) {
+    if (!node || node.name === OVERLAY_NAME || node.name === HIGHLIGHT_NAME) return;
+    try {
+      if (cc.Canvas && node.getComponent && node.getComponent(cc.Canvas)) {
+        out.push(node);
+      }
+    } catch (_) {}
+    var ch = node.children || [];
+    for (var i = 0; i < ch.length; i++) collectCanvases(ch[i], out);
+  }
+
+  /**
+   * 独立 Overlay 节点 + 最高 depth 相机（不清屏），保证多弹窗时绿框仍在最上层。
+   * 注意：不要挂 cc.Canvas，否则会抢走 Canvas.instance，打乱游戏适配。
+   */
+  function ensureOverlayHost() {
+    var scene = null;
+    try {
+      scene = cc.director.getScene();
+    } catch (_) {}
+    if (!scene) return null;
+
+    if (overlayCanvas && overlayCanvas.isValid) {
+      try {
+        if (overlayCanvas.parent !== scene) scene.addChild(overlayCanvas);
+        overlayCanvas.setSiblingIndex(scene.children.length - 1);
+        syncOverlayCamera(overlayCanvas);
+      } catch (_) {}
+      return overlayCanvas;
+    }
+
+    try {
+      var existed = scene.getChildByName && scene.getChildByName(OVERLAY_NAME);
+      if (existed && existed.isValid) {
+        overlayCanvas = existed;
+        syncOverlayCamera(overlayCanvas);
+        return overlayCanvas;
+      }
+    } catch (_) {}
+
+    var host = new cc.Node(OVERLAY_NAME);
+    try {
+      host.groupIndex = 0;
+    } catch (_) {}
+
+    var cam = null;
+    try {
+      cam = host.addComponent(cc.Camera);
+    } catch (_) {}
+    scene.addChild(host);
+    try {
+      host.setSiblingIndex(scene.children.length - 1);
+    } catch (_) {}
+    overlayCanvas = host;
+    syncOverlayCamera(host);
+    return host;
+  }
+
+  function findRefCamera(excludeNode) {
+    var best = null;
+    var bestDepth = -Infinity;
+    try {
+      var cams = (cc.Camera && cc.Camera.cameras) || [];
+      for (var i = 0; i < cams.length; i++) {
+        var c = cams[i];
+        if (!c || !c.enabled) continue;
+        if (excludeNode && c.node === excludeNode) continue;
+        try {
+          if (c.node && c.node.name === OVERLAY_NAME) continue;
+        } catch (_) {}
+        var d = typeof c.depth === 'number' ? c.depth : 0;
+        if (d >= bestDepth) {
+          bestDepth = d;
+          best = c;
+        }
+      }
+    } catch (_) {}
+    if (!best && cc.Camera) {
+      try {
+        best = cc.Camera.main;
+      } catch (_2) {}
+    }
+    return best;
+  }
+
+  function syncOverlayCamera(host) {
+    if (!host || !host.isValid) return;
+    var cam = host.getComponent(cc.Camera);
+    if (!cam) {
+      try {
+        cam = host.addComponent(cc.Camera);
+      } catch (_) {
+        return;
+      }
+    }
+    var ref = findRefCamera(host);
+    var maxDepth = 0;
+    if (ref && typeof ref.depth === 'number') maxDepth = ref.depth;
+    try {
+      var cams = (cc.Camera && cc.Camera.cameras) || [];
+      for (var i = 0; i < cams.length; i++) {
+        if (!cams[i] || cams[i].node === host) continue;
+        if (typeof cams[i].depth === 'number' && cams[i].depth > maxDepth) {
+          maxDepth = cams[i].depth;
+        }
+      }
+    } catch (_) {}
+
+    try {
+      cam.depth = maxDepth + 100;
+    } catch (_) {}
+    try {
+      cam.clearFlags = 0;
+    } catch (_) {}
+    try {
+      cam.cullingMask = 0xffffffff;
+    } catch (_) {}
+
+    if (ref && ref.node && ref.node.isValid) {
+      try {
+        cam.ortho = ref.ortho !== false;
+      } catch (_) {}
+      try {
+        if (typeof ref.orthoSize === 'number') cam.orthoSize = ref.orthoSize;
+      } catch (_) {}
+      try {
+        if (typeof ref.nearClip === 'number') cam.nearClip = ref.nearClip;
+        if (typeof ref.farClip === 'number') cam.farClip = ref.farClip;
+      } catch (_) {}
+      // 与顶层 UI 相机对齐，保证世界坐标换算一致
+      try {
+        var wp = ref.node.convertToWorldSpaceAR(cc.v2(0, 0));
+        var scene = host.parent;
+        if (scene && scene.convertToNodeSpaceAR) {
+          host.setPosition(scene.convertToNodeSpaceAR(wp));
+        }
+        host.angle = ref.node.angle || 0;
+        host.scaleX = ref.node.scaleX != null ? ref.node.scaleX : 1;
+        host.scaleY = ref.node.scaleY != null ? ref.node.scaleY : 1;
+      } catch (_) {}
+    }
+  }
+
   function findHighlightHost(forNode) {
+    var overlay = ensureOverlayHost();
+    if (overlay) return overlay;
+
     var p = forNode;
     while (p) {
       try {
@@ -462,20 +623,13 @@
       scene = cc.director.getScene();
     } catch (_) {}
     if (!scene) return null;
-
-    function findCanvas(n) {
-      if (!n) return null;
-      try {
-        if (cc.Canvas && n.getComponent && n.getComponent(cc.Canvas)) return n;
-      } catch (_) {}
-      var ch = n.children || [];
-      for (var i = 0; i < ch.length; i++) {
-        var found = findCanvas(ch[i]);
-        if (found) return found;
-      }
-      return null;
-    }
-    return findCanvas(scene) || scene;
+    var list = [];
+    collectCanvases(scene, list);
+    if (!list.length) return scene;
+    list.sort(function (a, b) {
+      return getCameraDepth(b) - getCameraDepth(a);
+    });
+    return list[0];
   }
 
   function mountHighlightOnTop(hl, host) {

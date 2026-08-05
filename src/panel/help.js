@@ -10,7 +10,7 @@
       id: 'basic',
       title: '基础',
       items: [
-        '在 Chrome 加载本扩展后，打开 Cocos Creator 2.x Web 预览（localhost / 127.0.0.1 任意端口），按 F12 打开「Cocos Node」面板。',
+        '在 Chrome 加载本扩展后，打开 Cocos Creator 2.x Web 预览（任意 IP/域名，如 `localhost:7456` 或 `192.168.x.x:7456`），按 F12 打开「Cocos Node」面板。探测到页面存在 `cc` 后自动连接。',
         '兼容 Creator 2.0～2.4；状态栏会显示引擎版本号（若可读取）。',
         '状态栏显示连接状态与当前场景名；点「刷新」可强制拉取节点树。',
         '「轮询」开启后会周期性同步节点树与选中节点属性；可调整间隔（毫秒）。',
@@ -112,7 +112,7 @@
       items: [
         '修改扩展代码后：在 chrome://extensions 点重新加载，然后刷新预览页并重开 DevTools。',
         '若出现「扩展已重载 / Extension context invalidated」：刷新预览页并重开本面板即可。',
-        '预览地址：localhost / 127.0.0.1 任意端口；游戏在 iframe 里也能识别（all_frames）。',
+        '预览地址：任意 http(s)（含局域网 IP）；检测到 Cocos `cc` 即连接；游戏在 iframe 里也能识别（all_frames）。',
         '支持范围：Cocos Creator 2.0～2.4.x。',
       ],
     },

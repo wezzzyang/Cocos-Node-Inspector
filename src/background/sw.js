@@ -141,9 +141,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'INJECT_BRIDGE' && sender.tab && sender.tab.id != null) {
+    const frameIds =
+      sender.frameId != null ? { frameIds: [sender.frameId] } : { allFrames: true };
     chrome.scripting
       .executeScript({
-        target: { tabId: sender.tab.id },
+        target: Object.assign({ tabId: sender.tab.id }, frameIds),
         files: [
           'src/injected/serializer.js',
           'src/injected/mutator.js',

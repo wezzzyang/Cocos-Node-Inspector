@@ -10,6 +10,7 @@
   window.__CCNodeInspectorPickerInstalled = true;
 
   var HIGHLIGHT_NAME = '__CC_NODE_INSPECTOR_HL__';
+  var OVERLAY_NAME = '__CC_NODE_INSPECTOR_OVERLAY__';
   var enabled = false;
   var candidates = [];
   var candidateIndex = 0;
@@ -205,7 +206,7 @@
   }
 
   function collectHits(worldPt, node, out, depth) {
-    if (!node || node.name === HIGHLIGHT_NAME) return;
+    if (!node || node.name === HIGHLIGHT_NAME || node.name === OVERLAY_NAME) return;
 
     var isScene = false;
     try {

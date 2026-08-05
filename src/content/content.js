@@ -188,6 +188,25 @@
     });
   }
 
+  /** 任意 IP/域名：先轻量探测 window.cc，确认是 Cocos 再注入完整桥（避免污染普通网页） */
+  function injectCcProbe() {
+    if (dead || !isExtensionAlive()) return;
+    if (document.documentElement.dataset.ccNodeInspectorProbe === '1') return;
+    document.documentElement.dataset.ccNodeInspectorProbe = '1';
+    try {
+      const s = document.createElement('script');
+      s.textContent =
+        '(function(){try{' +
+        'function ok(){try{return typeof cc!=="undefined"&&cc&&cc.director;}catch(e){return false;}}' +
+        'function emit(){window.postMessage({source:"CC_NODE_INSPECTOR_PAGE",type:"CC_PROBE_OK"},"*");}' +
+        'if(ok()){emit();return;}' +
+        'var n=0,t=setInterval(function(){if(ok()){clearInterval(t);emit();}else if(++n>120)clearInterval(t);},250);' +
+        '}catch(e){}})();';
+      (document.documentElement || document.head).appendChild(s);
+      s.remove();
+    } catch (_) {}
+  }
+
   function postToPage(msg) {
     window.postMessage(
       {
@@ -203,6 +222,11 @@
     if (event.source !== window) return;
     const data = event.data;
     if (!data || data.source !== PAGE_SOURCE) return;
+
+    if (data.type === 'CC_PROBE_OK') {
+      ensureInjected();
+      return;
+    }
 
     if (data.type === 'CC_READY') {
       bridgeReady = true;
@@ -302,8 +326,8 @@
       markDead();
       return;
     }
-    ensureInjected();
-    // 等 CC_READY 再连 SW；同时短延时 ping，兼容已加载完的页面
+    // 任意 http(s) 预览（含局域网 IP）：探测到 Cocos 或面板打开后再注入
+    injectCcProbe();
     setTimeout(function () {
       if (!dead) postToPage({ type: 'PING' });
     }, 300);
