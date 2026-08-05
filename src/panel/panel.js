@@ -257,6 +257,18 @@
       return;
     }
 
+    if (msg.type === 'INJECT_STATUS') {
+      if (msg.payload && msg.payload.ok === false) {
+        setStatus(
+          'err',
+          (msg.payload.hint || msg.payload.error || '无法注入页面').slice(0, 120)
+        );
+      } else if (msg.payload && msg.payload.via === 'scripting') {
+        setStatus('warn', '已强制注入，等待 cc…');
+      }
+      return;
+    }
+
     if (msg.type === 'CONTENT_HELLO') {
       if (msg.payload && msg.payload.bridgeReady) {
         connected = true;
@@ -525,4 +537,16 @@
   applyFontWeight(700);
   loadFontWeight();
   connect();
+
+  // 远程页若未注入 content，几秒后给出可操作提示
+  setTimeout(function () {
+    if (connected) return;
+    setStatus(
+      'warn',
+      '仍未连上：请确认扩展已重载、网站访问=所有网站，并刷新本页后重开 DevTools'
+    );
+    try {
+      if (port) port.postMessage({ type: 'ENSURE_INJECT' });
+    } catch (_) {}
+  }, 4000);
 })();

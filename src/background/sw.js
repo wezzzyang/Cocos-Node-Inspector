@@ -43,6 +43,63 @@ function forwardToContent(tabId, msg) {
   chrome.tabs.sendMessage(tabId, msg).catch(() => {});
 }
 
+/** 面板打开时：若页面尚无 content script，则编程注入（解决远程站未刷新/权限刚授权） */
+function ensureTabInstrumented(tabId) {
+  chrome.tabs.sendMessage(tabId, { type: 'PANEL_ATTACHED' }, (resp) => {
+    const err = chrome.runtime.lastError && chrome.runtime.lastError.message;
+    if (!err && resp && resp.ok) {
+      broadcastToPanels(tabId, {
+        from: 'sw',
+        type: 'INJECT_STATUS',
+        payload: { ok: true, via: 'content' },
+      });
+      return;
+    }
+
+    Promise.resolve()
+      .then(() =>
+        chrome.scripting.executeScript({
+          target: { tabId: tabId, allFrames: true },
+          files: ['src/content/content.js'],
+          world: 'ISOLATED',
+        })
+      )
+      .then(() =>
+        chrome.scripting.executeScript({
+          target: { tabId: tabId, allFrames: true },
+          files: [
+            'src/injected/serializer.js',
+            'src/injected/mutator.js',
+            'src/injected/picker.js',
+            'src/injected/bridge.js',
+          ],
+          world: 'MAIN',
+        })
+      )
+      .then(() => {
+        chrome.tabs.sendMessage(tabId, { type: 'PANEL_ATTACHED' }).catch(() => {});
+        broadcastToPanels(tabId, {
+          from: 'sw',
+          type: 'INJECT_STATUS',
+          payload: { ok: true, via: 'scripting' },
+        });
+      })
+      .catch((e) => {
+        const msg = String((e && e.message) || e || 'inject failed');
+        broadcastToPanels(tabId, {
+          from: 'sw',
+          type: 'INJECT_STATUS',
+          payload: {
+            ok: false,
+            error: msg,
+            hint:
+              '无法注入到该页面。请到 chrome://extensions → Cocos Node Inspector →「网站访问权限」设为「在所有网站上」，然后刷新游戏页并重开 DevTools。',
+          },
+        });
+      });
+  });
+}
+
 chrome.runtime.onConnect.addListener((port) => {
   const name = port.name || '';
 
@@ -51,10 +108,13 @@ chrome.runtime.onConnect.addListener((port) => {
     if (!Number.isFinite(tabId)) return;
 
     getPanelSet(tabId).add(port);
-    chrome.tabs.sendMessage(tabId, { type: 'PANEL_ATTACHED' }).catch(() => {});
+    ensureTabInstrumented(tabId);
 
     port.onMessage.addListener((msg) => {
       if (!msg) return;
+      if (msg.type === 'ENSURE_INJECT') {
+        ensureTabInstrumented(tabId);
+      }
       forwardToContent(tabId, {
         from: 'panel',
         type: msg.type,
@@ -86,7 +146,6 @@ chrome.runtime.onConnect.addListener((port) => {
 
     port.onMessage.addListener((msg) => {
       if (!msg) return;
-      // Normalize CONTENT_HELLO
       if (msg.type === 'CONTENT_HELLO') {
         broadcastToPanels(tabId, {
           from: 'content',

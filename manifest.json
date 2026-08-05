@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Cocos Node Inspector",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Cocos Creator 2.x（2.0～2.4）运行时节点树查看与编辑 — Chrome DevTools",
   "icons": {
     "16": "icons/icon16.png",
