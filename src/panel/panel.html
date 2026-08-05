@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cocos 节点</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <button
+        type="button"
+        id="btnPick"
+        class="theme-toggle pick-btn"
+        title="在游戏画面中拾取节点（Alt+Shift+P）"
+      >
+        拾取
+      </button>
+      <div class="status" id="status">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">连接中…</span>
+      </div>
+      <div class="toolbar-actions">
+        <label class="chk">
+          <input type="checkbox" id="pollToggle" checked />
+          轮询
+        </label>
+        <input
+          type="number"
+          id="pollInterval"
+          class="poll-input"
+          value="450"
+          min="100"
+          step="50"
+          title="轮询间隔（毫秒）"
+        />
+        <button type="button" id="btnRefresh" title="刷新节点树">刷新</button>
+      </div>
+      <button type="button" id="btnHelp" class="theme-toggle" title="功能说明">说明</button>
+      <button type="button" id="themeToggle" class="theme-toggle" title="切换浅色/深色">深色</button>
+      <label class="font-scale" title="界面字体缩放（滑条尺寸固定）">
+        <span class="font-scale-label">字号</span>
+        <input type="range" id="fontScale" min="0.85" max="1.6" step="0.05" value="1" />
+        <span id="fontScaleVal" class="font-scale-val">100%</span>
+      </label>
+      <label class="font-scale" title="字体粗细（滑条尺寸固定）">
+        <span class="font-scale-label">字重</span>
+        <input type="range" id="fontWeight" min="400" max="800" step="50" value="700" />
+        <span id="fontWeightVal" class="font-scale-val">700</span>
+      </label>
+    </header>
+
+    <div class="main">
+      <aside class="hierarchy">
+        <div class="pane-header">
+          <span>节点树</span>
+          <input type="search" id="searchInput" placeholder="名称 或 tt:组件名" />
+        </div>
+        <div class="dnd-hint">
+          拖拽：偏左=同级 · 偏右=子节点 · Alt+点击=该节点子树全展/全折 · tt:Label 按组件搜
+        </div>
+        <div class="tree-scroll" id="treeRoot"></div>
+      </aside>
+      <section class="inspector-pane">
+        <div class="pane-header"><span>属性检查</span></div>
+        <div class="inspector-scroll" id="inspectorRoot">
+          <div class="empty">请选择节点</div>
+        </div>
+      </section>
+    </div>
+
+    <div id="helpOverlay" class="help-overlay hidden" aria-hidden="true">
+      <div class="help-dialog" role="dialog" aria-labelledby="helpTitle">
+        <header class="help-header">
+          <h2 id="helpTitle">功能说明</h2>
+          <button type="button" id="helpClose" class="help-close" title="关闭">×</button>
+        </header>
+        <div class="help-body" id="helpBody"></div>
+        <footer class="help-footer">新增功能请同步更新 panel/help.js</footer>
+      </div>
+    </div>
+
+    <script src="help.js"></script>
+    <script src="tree.js"></script>
+    <script src="inspector.js"></script>
+    <script src="panel.js"></script>
+  </body>
+</html>
